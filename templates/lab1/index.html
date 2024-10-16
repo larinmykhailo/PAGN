@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Form</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        {% comment %}        $(document).ready(function () {
+					$('#add_form').on('submit', function (event) {
+						event.preventDefault();
+						const d = new Date();
+						$('#beforeNormalization').attr('src', {% url 'plot_view_before' %} +'?' + d.getTime());
+					});
+				});{% endcomment %}
+    </script>
+</head>
+<body>
+<table>
+    <tr>
+
+        <td>
+            <h3>Додати:</h3>
+            <form id="add_form" method="post" action="{% url 'add_point' %}">
+                {% csrf_token %}
+                <label for="x">X:</label>
+                <input type="text" id="x" name="x" pattern="^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$"><br><br>
+                <label for="y">Y:</label>
+                <input type="text" id="y" name="y" pattern="^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$"><br><br>
+                <label for="z">Z:</label>
+                <input type="text" id="z" name="z" pattern="^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+            <h3>Невідомий об'єкт:</h3>
+            Координати:
+            Відстань до класу:
+
+
+
+        </td>
+        <td>
+
+            <table>
+                <tr>
+                    <td>
+                        <div>
+                            <img id="beforeNormalization" src="{% url 'plot_view_before' %}"
+                                 alt="Before normalization plot">
+                        </div>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div>
+                            <img id="afterNormalization" src="{% url 'plot_view_after' %}"
+                                 alt="After normalization plot">
+
+                        </div>
+
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

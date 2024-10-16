@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Plotter</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<h1>Lab 2_3 - Add coordinates and let me decide point's class:</h1>
+<h3>Functions:</h3>
+<p>d1(x) = 1x - 1y - 0.3</p>
+<p>d2(x) = 1x + 1y - 1.2</p>
+<p>d3(x) = -3x - 1y + 1.7</p>
+
+<h3>Classes:</h3>
+<p>1: red</p>
+<p>2: blue</p>
+<p>3: green</p>
+<p>Unclassified: black</p>
+
+<h3>Add new:</h3>
+{% csrf_token %}
+<form id="graph-form">
+    <label for="x">x =</label>
+    <input type="text" id="x" name="x" value="0"><br>
+    <label for="y">y =</label>
+    <input type="text" id="y" name="y" value="0"><br>
+    <input type="submit" value="Decide!">
+</form>
+
+<div>
+    <h3>Decision:</h3>
+    This point belongs to class <p id="decision"></p>
+</div>
+
+
+<div id="graph-container">
+    <img id="plot" src="" alt="plot">
+    <img id="plot2_3" src="{% url 'plot_2_3' %}" alt="plot">
+</div>
+
+<div id="task 5">
+    <h3>Task 5</h3>
+    <p id="сentroid1"></p>
+    <p id="сentroid2"></p>
+    <p id="сentroid3"></p>
+    <p id="сentroid4"></p>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        $('#graph-form').submit(function (event) {
+            event.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '/lab2/lab2_3/add_point',
+                contentType: "application/json",
+                processData: false,
+                data: JSON.stringify({
+                    x: $('#x').val(),
+                    y: $('#y').val(),
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                }),
+                success: function (response) {
+                    $('#decision').text(response.decision);
+                    $('#plot').attr('src', 'data:image/png;base64,' + response.image);
+
+                    // Set the image data
+                }
+            });
+            {#const d = new Date();#}
+            {#$("#plot").attr('src', {% url 'plot' %} +'?' + d.getTime());#}
+        });
+    });
+
+    $(document).ready(function () {
+        $.ajax({
+            type: 'POST',
+            url: '/lab2/lab2_3/plot_2_5',
+            contentType: "application/json",
+            processData: false,
+            data: JSON.stringify({
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            }),
+            success: function (response) {
+                $('#сentroid1').text($.param(response.сentroid1));
+                $('#сentroid2').text(response.сentroid2);
+                $('#сentroid3').text(response.сentroid3);
+                $('#сentroid4').text(response.сentroid4);
+            }
+        });
+    });
+</script>
+</body>
+</html>

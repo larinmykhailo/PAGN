@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Plotter</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Graph Plotter</h1>
+    <form id="graph-form">
+         {% csrf_token %}
+        <h3>Add new:</h3>
+        <label for="x">x =</label>
+        <input type="text" id="x" name="x" value="0"><br>
+        <label for="y">y =</label>
+        <input type="text" id="y" name="y" value="0"><br>
+{#        <label for="z">z =</label>#}
+{#        <input type="text" id="z" name="z" value="z"><br>#}
+{#        <input type="submit" value="Plot">#}
+    </form>
+    <div id="graph-container">
+          <img id="plot" src="{% url 'plot' %}"
+                                 alt="plot">
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#graph-form').submit(function(event) {
+                event.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: '',
+                    data: {
+                        x: $('#x').val(),
+                        y: $('#y').val(),
+                        {#z: $('#z').val(),#}
+                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        {#$('#graph-container').html('<img src="data:image/png;base64,' + response.data + '" alt="Graph">');#}
+						$('#plot').attr('src', response.data);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
