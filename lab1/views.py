@@ -1,11 +1,9 @@
 import numbers
 from io import BytesIO
 
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-
-from lab1.src.Util import *
 
 
 def index(request):

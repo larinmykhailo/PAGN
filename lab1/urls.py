@@ -1,9 +1,6 @@
 from django.urls import path
 
-from .src.Util import initPoints
 from .views import index, plot_view_before, plot_view_after, add_point
-
-initPoints()
 
 urlpatterns = [
     path('', index, name='index'),
