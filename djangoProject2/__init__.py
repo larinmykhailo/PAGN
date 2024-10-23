@@ -1,0 +1,1 @@
+default_app_config = 'djangoProject2.djangoProject2.apps.MyAppConfig'

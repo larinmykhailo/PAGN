@@ -1,7 +1,7 @@
 # Define the Point class
 import json
 
-from lab1.src.Class import Class
+from djangoProject2.src.Class import Class
 
 
 class Point:
@@ -10,6 +10,9 @@ class Point:
         self.y = y
         self.z = z
         self.clazz = clazz
+
+    def __str__(self):
+        return f"Point({self.x}, {self.y}, {self.z}, {self.clazz})"
 
 class PersonEncoder(json.JSONEncoder):
     def default(self, obj):
