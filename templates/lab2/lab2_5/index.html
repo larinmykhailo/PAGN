@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Plotter</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .legend {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-left: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .red {
+            background-color: red;
+        }
+
+        .blue {
+            background-color: blue;
+        }
+
+        .green {
+            background-color: green;
+        }
+
+        .yellow {
+            background-color: yellow;
+        }
+
+        .black {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+<h1>Розподіл точок поміж 4 класами:</h1>
+
+<div id="graph-container">
+    <table>
+        <tr>
+            <td>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot red"></div>
+                        <span>Class 1</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot blue"></div>
+                        <span>Class 2</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot green"></div>
+                        <span>Class 3</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot yellow"></div>
+                        <span>Class 4</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot black"></div>
+                        <span>Unknown</span>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <img id="plot" src="{% url 'plot' %}" alt="plot">
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+</body>
+</html>

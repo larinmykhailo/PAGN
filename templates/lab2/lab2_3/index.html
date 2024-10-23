@@ -35,7 +35,7 @@
 
 <div id="graph-container">
     <img id="plot" src="" alt="plot">
-    <img id="plot2_3" src="{% url 'plot_2_3' %}" alt="plot">
+{#    <img id="plot2_3" src="{% url 'plot_2_3' %}" alt="plot">#}
 </div>
 
 <div id="task 5">
@@ -83,10 +83,10 @@
                 csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
             }),
             success: function (response) {
-                $('#сentroid1').text($.param(response.сentroid1));
-                $('#сentroid2').text(response.сentroid2);
-                $('#сentroid3').text(response.сentroid3);
-                $('#сentroid4').text(response.сentroid4);
+                $('#сentroid1').text(response.сentroid1.x);
+                $('#сentroid2').text(response.сentroid2.x);
+                $('#сentroid3').text(response.сentroid3.x);
+                $('#сentroid4').text(response.сentroid4.x);
             }
         });
     });
