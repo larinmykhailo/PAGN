@@ -5,6 +5,7 @@ import pandas as pd
 from sympy import symbols, simplify
 from djangoProject2.src.Class import Class
 from djangoProject2.src.Point import Point
+from djangoProject2.src.Util import format_f
 
 
 class MyAppConfig(AppConfig):
@@ -12,38 +13,51 @@ class MyAppConfig(AppConfig):
 
     def ready(self):
         # Ensure the data is calculated and cached on startup
-        self.init_classes()
-        self.init_points()
-        self.init_normalized_points()
-        self.init_centroids()
-        self.init_equations()
+        init_classes()
+        init_points()
+        init_normalized_points()
+        init_centroids()
+        init_normalized_centroids()
+        init_equations()
 
-    def init_classes(self):
-        classes = cache.get('classes')
-        if classes is None:
-            classes  = get_classes()
-            cache.set('classes', classes, timeout=None)  # timeout=None means the cache will not expire
+def init_normalized_points():
+    normalized_points = cache.get('normalized_points')
+    if normalized_points is None:
+        normalized_points = get_normalized_points()
+        cache.set('normalized_points', normalized_points, timeout=None)  # timeout=None means the cache will not expire
 
-    def init_points(self):
-        points = cache.get('points')
-        if points is None:
-            points  = get_points()
-            cache.set('points', points, timeout=None)  # timeout=None means the cache will not expire
-    def init_normalized_points(self):
-            normalized_points = cache.get('normalized_points')
-            if normalized_points is None:
-                normalized_points  = get_normalized_points()
-                cache.set('normalized_points', normalized_points, timeout=None)  # timeout=None means the cache will not expire
-    def init_centroids(self):
-            centroids = cache.get('centroids')
-            if centroids is None:
-                centroids  = get_centroids()
-                cache.set('centroids', centroids, timeout=None)  # timeout=None means the cache will not expire
-    def init_equations(self):
-            equations = cache.get('equations')
-            if equations is None:
-                equations  = get_equations()
-                cache.set('equations', equations, timeout=None)  # timeout=None means the cache will not expire
+
+def init_classes():
+    classes = cache.get('classes')
+    if classes is None:
+        classes = get_classes()
+        cache.set('classes', classes, timeout=None)  # timeout=None means the cache will not expire
+
+
+def init_points():
+    points = cache.get('points')
+    if points is None:
+        points = get_points()
+        cache.set('points', points, timeout=None)  # timeout=None means the cache will not expire
+
+def init_centroids():
+    centroids = cache.get('centroids')
+    if centroids is None:
+        centroids = get_centroids()
+        cache.set('centroids', centroids, timeout=None)  # timeout=None means the cache will not expire
+
+def init_normalized_centroids():
+    centroids = cache.get('normalized_centroids')
+    if centroids is None:
+        centroids = get_normalized_centroids()
+        cache.set('normalized_centroids', centroids, timeout=None)  # timeout=None means the cache will not expire
+
+
+def init_equations():
+    equations = cache.get('equations')
+    if equations is None:
+        equations = get_equations()
+        cache.set('equations', equations, timeout=None)  # timeout=None means the cache will not expire
 
 def get_classes():
     classes = []
@@ -56,6 +70,7 @@ def get_classes():
     class4 = Class('IV', 's', 'yellow')
     classes.append(class4)
     return classes
+
 
 def get_points():
     classes = cache.get('classes')
@@ -70,6 +85,7 @@ def get_points():
 
     return points
 
+
 def get_normalized_points():
     normalized_points = []
 
@@ -81,7 +97,25 @@ def get_normalized_points():
         normalized_points.append(Point(point.x / max_x, point.y / max_y, point.z / max_z, point.clazz))
     return normalized_points
 
+
 def get_centroids():
+    classes = cache.get('classes')
+    points = cache.get('points')
+    c = []
+    for CLASS in classes:
+        sum_x = 0
+        sum_y = 0
+        sum_z = 0
+        count = 20
+        for point in points:
+            if point.clazz.label == CLASS.label:
+                sum_x = sum_x + point.x
+                sum_y = sum_y + point.y
+                sum_z = sum_z + point.z
+        c.append(Point(format_f(sum_x / count), format_f(sum_y / count), format_f(sum_z / count), CLASS))
+    return c
+
+def get_normalized_centroids():
     classes = cache.get('classes')
     normalized_points = cache.get('normalized_points')
     c = []
@@ -100,8 +134,7 @@ def get_centroids():
 
 
 def get_equations():
-
-    c = cache.get('centroids')
+    c = cache.get('normalized_centroids')
     x, y, z = symbols('x y z')
 
     # Define the centroid points
@@ -150,15 +183,8 @@ def get_equations():
 
     return equations
 
-
-def format_f(x):
-    return float("{0:.2f}".format(x))
-
-
-
 # Function to substitute values into the equation
 def substitute_values_from_point(eq, point):
     # Define the symbols
     x, y, z = symbols('x y z')
     return eq.subs({x: point.x, y: point.y, z: point.z})
-

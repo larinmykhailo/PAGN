@@ -1,10 +1,11 @@
 from django.urls import path
 
-from .views import index, plot_view_before, plot_view_after, add_point
+from .views import index, plot1, add_point1, calculate, compare_results
 
 urlpatterns = [
     path('', index, name='index'),
-    path('add_point', add_point, name='add_point'),
-    path('plot_view_before', plot_view_before, name='plot_view_before'),
-    path('plot_view_after', plot_view_after, name='plot_view_after'),
+    path('add_point1', add_point1, name='add_point1'),
+    path('plot1', plot1, name='plot1'),
+    path('calculate', calculate, name='calculate'),
+    path('compare_results', compare_results, name='compare_results'),
 ]
