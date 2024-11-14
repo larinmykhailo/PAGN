@@ -1,5 +1,6 @@
+
+import itertools
 import json
-import sys
 from io import BytesIO
 
 import numpy as np
@@ -9,29 +10,28 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from matplotlib import pyplot as plt
 
-from djangoProject2.apps import init_normalized_points, init_normalized_centroids, init_centroids
+from djangoProject2.apps import init_normalized_points, init_centroids, init_normalized_centroids
 from djangoProject2.src.Point import Point
-from djangoProject2.src.Util import calculate_distance, format_f, calculate_distance_after_norm
+from djangoProject2.src.Util import normalize
 from lab3.src.Utils import ho_kashyap_algorithm
 
 new_points = []
+d_functions = {}
 
 
 def index(request):
-    return render(request, 'lab1/index.html')
+    return render(request, 'lab3/index.html')
 
 
 def add_point1(request):
     points = cache.get('points')
-
+    classes = cache.get('classes')
     data = json.loads(request.body)
 
     # Extract the values from the JSON data
     x = data.get('x')
     y = data.get('y')
     z = data.get('z')
-    option1 = data.get('option1')
-    option2 = data.get('option2')
 
     # Validate or process the data (e.g., convert to float)
     try:
@@ -41,86 +41,52 @@ def add_point1(request):
     except ValueError:
         return HttpResponse('Invalid input: Coordinates must be numbers.')
 
-    new_point = classify_by_options(option1, option2, x, y, z)
-    new_points.append(new_point)
-    points.append(new_point)
+    x, y, z = normalize(x, y, z)
+    res = check_class(x, y, z, calculate_d_functions())
+    nearest_class = next((obj for obj in classes if obj.label == res), None)
+    new_point = Point(x, y, z, nearest_class)
 
-    cache.set('points', points)
-    cache.delete('normalized_points')
-    cache.delete('centroids')
-    cache.delete('normalized_centroids')
-    init_normalized_points()
-    init_centroids()
-    init_normalized_centroids()
+    new_points.append(new_point)
+
+    # points.append(new_point)
+    #
+    # cache.set('points', points)
+    # cache.delete('normalized_points')
+    # cache.delete('centroids')
+    # cache.delete('normalized_centroids')
+    # init_normalized_points()
+    # init_centroids()
+    # init_normalized_centroids()
 
     return JsonResponse({})
 
+def calculate_d_functions():
 
-def classify_by_options(option1, option2, x, y, z):
-    centroids = cache.get('centroids')
-    nearest_class = None
-    min_distance = sys.float_info.max
-    for centroid in centroids:
-        dist = calculate_distance(x, y, z, option1, option2, centroid)
-        if dist < min_distance:
-            min_distance = dist
-            nearest_class = centroid.clazz
-    new_point = Point(x, y, z, nearest_class)
-    return new_point
+    points = cache.get('normalized_points')
+    classes = cache.get('classes')
+    d_functions = {}
 
+    for pair in itertools.combinations(classes, 2):
 
-def classify_by_options_after_norm(option1, option2, x, y, z):
-    centroids = cache.get('normalized_centroids')
-    nearest_class = None
-    min_distance = sys.float_info.max
-    for centroid in centroids:
-        dist = calculate_distance_after_norm(x, y, z, option1, option2, centroid)
-        if dist < min_distance:
-            min_distance = dist
-            nearest_class = centroid.clazz
-    new_point = Point(x, y, z, nearest_class)
-    return new_point
+        # Отримання точок першого і другого класу
+        first_class_points = [p for p in points if p.clazz.label == pair[0].label]
+        second_class_points = [p for p in points if p.clazz.label == pair[1].label]
 
+        # Створення масивів для обох класів (матриця ознак для кожного класу)
+        V_first_class = np.array([[p.x, p.y, p.z] for p in first_class_points])
+        V_second_class = np.array([[p.x, p.y, p.z] for p in second_class_points])
 
-def calculate(request):
-    centroids = cache.get('centroids')
+        # Об'єднання двох масивів
+        V = np.concatenate((V_first_class, V_second_class), axis=0)
 
-    data = json.loads(request.body)
+        w, iter = ho_kashyap_algorithm(V)
 
-    # Extract the values from the JSON data
-    x = data.get('x')
-    y = data.get('y')
-    z = data.get('z')
-    option1 = data.get('option1')
-    option2 = data.get('option2')
+        a, b, c, d = w
 
-    # Validate or process the data (e.g., convert to float)
-    try:
-        x = float(x)
-        y = float(y)
-        z = float(z)
-    except ValueError:
-        return HttpResponse('Invalid input: Coordinates must be numbers.')
-
-    dist_class1 = calculate_distance(x, y, z, option1, option2, centroids[0])
-    dist_class2 = calculate_distance(x, y, z, option1, option2, centroids[1])
-    dist_class3 = calculate_distance(x, y, z, option1, option2, centroids[2])
-    dist_class4 = calculate_distance(x, y, z, option1, option2, centroids[3])
-
-    return_data = {
-        'coordinate_x': x,
-        'coordinate_y': y,
-        'coordinate_z': z,
-        'dist_class1': format_f(dist_class1),
-        'dist_class2': format_f(dist_class2),
-        'dist_class3': format_f(dist_class3),
-        'dist_class4': format_f(dist_class4)
-    }
-    return JsonResponse(return_data)
-
+        d_functions[f"d{pair[0].label}{pair[1].label}"] = lambda x, y, z, a1=a, b1=b, c1=c, d1=d: a1 * x + b1 * y + c1 * z + d1
+    return d_functions
 
 def plot1(request):
-
 
     # Точки
     fig = plt.figure(figsize=(10, 8))
@@ -130,9 +96,12 @@ def plot1(request):
     ax1.set_ylabel('Y')
     ax1.set_zlabel('Z')
 
-    points = cache.get('points')
+    points = cache.get('normalized_points')
 
     for point in points:
+        ax1.scatter(point.x, point.y, point.z, marker=point.clazz.marker, color=point.clazz.color)
+
+    for point in new_points:
         ax1.scatter(point.x, point.y, point.z, marker=point.clazz.marker, color=point.clazz.color)
 
     classes = cache.get('classes')
@@ -145,39 +114,54 @@ def plot1(request):
 
 
     # Площини
+
     ax2 = fig.add_subplot(212, projection='3d')
-
-
-
-    filtered_points = [p for p in points if (p.clazz.label == 'II' or p.clazz.label == 'IV')]
-    V = np.array([[p.x, p.y, p.z] for p in filtered_points])
-    w = ho_kashyap_algorithm(V)
-
-
-
-    # Створення сітки точок для x1 і x2
-    x1_vals = np.linspace(-1, 1, 50)  # Діапазон для x1
-    x2_vals = np.linspace(-1, 1, 50)  # Діапазон для x2
-    x1, x2 = np.meshgrid(x1_vals, x2_vals)
-
-
-    a, b, c, d = w
-    # Обчислення x3 на основі рівняння площини
-    # a * x1 + b * x2 + c * x3 + d = 0
-    # x3 = -(a * x1 + b * x2 + d) / c
-    x3 = -(a * x1 + b * x2 + d) / c
-
-
-
-    # Побудова площини
-    ax2.plot_surface(x1, x2, x3, cmap='viridis', alpha=0.6)
 
     # Налаштування міток осей
     ax2.set_xlabel('X1')
     ax2.set_ylabel('X2')
     ax2.set_zlabel('X3')
 
+    for point in new_points:
+        ax2.scatter(point.x, point.y, point.z, marker=point.clazz.marker, color=point.clazz.color)
 
+
+# Створення сітки точок для x1 і x2
+    x1_vals = np.linspace(0, 1, 50)  # Діапазон для x1
+    x2_vals = np.linspace(0, 1, 50)  # Діапазон для x2
+    x1, x2 = np.meshgrid(x1_vals, x2_vals)
+
+
+    # Генерація всіх комбінацій пар елементів
+    # Виведення всіх пар
+    for pair in itertools.combinations(classes, 2):
+
+        # Отримання точок першого і другого класу
+        first_class_points = [p for p in points if p.clazz.label == pair[0].label]
+        second_class_points = [p for p in points if p.clazz.label == pair[1].label]
+
+        # Створення масивів для обох класів (матриця ознак для кожного класу)
+        V_first_class = np.array([[p.x, p.y, p.z] for p in first_class_points])
+        V_second_class = np.array([[p.x, p.y, p.z] for p in second_class_points])
+
+        # Об'єднання двох масивів
+        V = np.concatenate((V_first_class, V_second_class), axis=0)
+
+        w, iter = ho_kashyap_algorithm(V)
+
+        a, b, c, d = w
+
+        # print(f"d{pair[0].label}{pair[1].label}{a:.2f} * x1 + {b:.2f} * x2 + {c:.2f} * x3 + {d:.2f}")
+
+        # Обчислення x3 на основі рівняння площини
+        # a * x1 + b * x2 + c * x3 + d = 0
+        # x3 = -(a * x1 + b * x2 + d) / c
+        x3 = -(a * x1 + b * x2 + d) / c
+
+        d_functions[f"d{pair[0].label}{pair[1].label}"] = lambda x, y, z, a1=a, b1=b, c1=c, d1=d: a1 * x + b1 * y + c1 * z + d1
+
+        # Побудова площини
+        ax2.plot_surface(x1, x2, x3, cmap='viridis', alpha=0.1)
 
     buffer = BytesIO()
     plt.savefig(buffer, format='png')
@@ -189,50 +173,83 @@ def plot1(request):
 @csrf_exempt
 def compare_results(request):
     classes = cache.get('classes')
-    fig = plt.figure(figsize=(10, 10))
 
-    # First plot
-    ax1 = fig.add_subplot(221, projection='3d')
-    ax1.set_title('1.1')
 
-    # Second plot
-    ax2 = fig.add_subplot(222, projection='3d')
-    ax2.set_title('1.2')
+    fig = plt.figure(figsize=(15, 20))
+    points = cache.get('normalized_points')
 
-    # Third plot
-    ax3 = fig.add_subplot(223, projection='3d')
-    ax3.set_title('2.1')
+    # Площини
 
-    # Fourth plot
-    ax4 = fig.add_subplot(224, projection='3d')
-    ax4.set_title('2.2')
 
-    for clazz in classes:
-        ax1.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
-        ax2.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
-        ax3.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
-        ax4.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
+    # Генерація всіх комбінацій пар елементів
+    # Виведення всіх пар
+    i = 1
+    for pair in itertools.combinations(classes, 2):
 
-    ax1.legend()
-    ax2.legend()
-    ax3.legend()
-    ax4.legend()
+        # Отримання точок першого і другого класу
+        first_class_points = [p for p in points if p.clazz.label == pair[0].label]
+        second_class_points = [p for p in points if p.clazz.label == pair[1].label]
 
-    for i in np.arange(0, 1, 0.1):
-        for j in np.arange(0, 1, 0.1):
-            for k in np.arange(0, 1, 0.1):
-                # new_point = classify_by_options_after_norm('o1v1', 'o2v1', i, j, k)
-                # ax1.scatter(new_point.x, new_point.y, new_point.z, marker=new_point.clazz.marker, color=new_point.clazz.color)
+        # Створення масивів для обох класів (матриця ознак для кожного класу)
+        V_first_class = np.array([[p.x, p.y, p.z] for p in first_class_points])
+        V_second_class = np.array([[p.x, p.y, p.z] for p in second_class_points])
 
-                # new_point = classify_by_options_after_norm('o1v1', 'o2v2', i, j, k)
-                # ax2.scatter(new_point.x, new_point.y, new_point.z, marker=new_point.clazz.marker, color=new_point.clazz.color)
-                #
-                # new_point = classify_by_options_after_norm('o1v2', 'o2v1', i, j, k)
-                # ax3.scatter(new_point.x, new_point.y, new_point.z, marker=new_point.clazz.marker, color=new_point.clazz.color)
+        # Об'єднання двох масивів
+        V = np.concatenate((V_first_class, V_second_class), axis=0)
 
-                new_point = classify_by_options_after_norm('o1v2', 'o2v2', i, j, k)
-                ax4.scatter(new_point.x, new_point.y, new_point.z, marker=new_point.clazz.marker,
-                            color=new_point.clazz.color)
+        w, iter = ho_kashyap_algorithm(V)
+
+        a, b, c, d = w
+
+        d_functions[f"d{pair[0].label}{pair[1].label}"] = lambda x, y, z, a1=a, b1=b, c1=c, d1=d: a1 * x + b1 * y + c1 * z + d1
+
+        plot_id = int(f"23{i}")
+        i += 1
+        ax = fig.add_subplot(plot_id, projection='3d')
+        ax.set_title(f"Клас {pair[0].label} - Клас {pair[1].label}")
+
+        # Налаштування міток осей
+        ax.set_xlabel('X1')
+        ax.set_ylabel('X2')
+        ax.set_zlabel('X3')
+
+        # Створення сітки точок для x1 і x2
+        x1_vals = np.linspace(0, 1, 50)  # Діапазон для x1
+        x2_vals = np.linspace(0, 1, 50)  # Діапазон для x2
+        x1, x2 = np.meshgrid(x1_vals, x2_vals)
+
+        for point in first_class_points:
+            ax.scatter(point.x, point.y, point.z, marker=point.clazz.marker, color=point.clazz.color)
+
+        for point in second_class_points:
+            ax.scatter(point.x, point.y, point.z, marker=point.clazz.marker, color=point.clazz.color)
+
+        for clazz in classes:
+            ax.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
+        ax.legend()
+
+
+        # Обчислення x3 на основі рівняння площини
+        # a * x1 + b * x2 + c * x3 + d = 0
+        # x3 = -(a * x1 + b * x2 + d) / c
+        x3 = -(a * x1 + b * x2 + d) / c
+
+        # Побудова площини
+        ax.plot_surface(x1, x2, x3, cmap='viridis', alpha=1)
+
+        # Змінюємо кут огляду
+        def adjust_view(ax, normal):
+            # Визначаємо напрямок огляду таким чином, щоб площина була орієнтована як лінія
+            azim = np.arctan2(normal[1], normal[0]) * 180 / np.pi  # Кут для azimuth (горизонтальний)
+            elev = np.arctan2(normal[2], normal[0]) * 180 / np.pi  # Кут для elevation (вертикальний)
+
+            # Встановлюємо ці кути огляду
+            ax.view_init(elev=elev-135, azim=-80)
+
+        # Викликаємо функцію для встановлення кута огляду
+        adjust_view(ax, np.array([a, b, c]))
+
+    cache.set('d_functions', d_functions, timeout=None)
 
     # Save the figure to a BytesIO object
     buf = BytesIO()
@@ -242,3 +259,49 @@ def compare_results(request):
     plt.close(fig)
 
     return HttpResponse(buf, content_type='image/png')
+#
+# def unclassigied_results(request):
+#
+#     fig = plt.figure(figsize=(10, 10))
+#     # некласифіковіні точки
+#     ax_uncl = fig.add_subplot(247, projection='3d')
+#     ax_uncl.set_title(f"Некласифікований простір")
+#
+#     for i in np.arange(0, 1, 0.1):
+#         for j in np.arange(0, 1, 0.1):
+#             for k in np.arange(0, 1, 0.1):
+#                 if check_class(i, j, k, d_functions) is None:
+#                     ax_uncl.scatter(i, j, k, color='black', marker='o')
+#     ax_uncl.scatter([], [], [], label='unclassified', color='black', marker='o')
+#     ax_uncl.legend()
+#
+#
+#
+#     # Save the figure to a BytesIO object
+#     buf = BytesIO()
+#     plt.tight_layout()
+#     plt.savefig(buf, format='png')
+#     buf.seek(0)
+#     plt.close(fig)
+#
+#     return HttpResponse(buf, content_type='image/png')
+#
+#
+#
+# Функція, яка перевіряє, чи точка задовольняє умови приналежності до кожного класу
+def check_class(x, y, z, d_functions):
+    # Перевірка першого класу
+    if d_functions['d12'](x, y, z) > 0 and d_functions['d13'](x, y, z) > 0 and d_functions['d14'](x, y, z) > 0:
+        return '1'
+    # Перевірка другого класу
+    elif -d_functions['d12'](x, y, z) > 0 and d_functions['d23'](x, y, z) > 0 and d_functions['d24'](x, y, z) > 0:
+        return '2'
+    # Перевірка третього класу
+    elif -d_functions['d13'](x, y, z) > 0 and -d_functions['d23'](x, y, z) > 0 and d_functions['d34'](x, y, z) > 0:
+        return '3'
+    # Перевірка четвертого класу
+    elif -d_functions['d14'](x, y, z) > 0 and -d_functions['d24'](x, y, z) > 0 and -d_functions['d34'](x, y, z) > 0:
+        return '4'
+    # Якщо жодна система нерівностей не виконується
+    else:
+        return None

@@ -61,13 +61,13 @@ def init_equations():
 
 def get_classes():
     classes = []
-    class1 = Class('I', 'o', 'red')
+    class1 = Class('1', 'o', 'red')
     classes.append(class1)
-    class2 = Class('II', 'x', 'blue')
+    class2 = Class('2', 'x', 'blue')
     classes.append(class2)
-    class3 = Class('III', '.', 'green')
+    class3 = Class('3', '.', 'green')
     classes.append(class3)
-    class4 = Class('IV', 's', 'yellow')
+    class4 = Class('4', 's', 'yellow')
     classes.append(class4)
     return classes
 

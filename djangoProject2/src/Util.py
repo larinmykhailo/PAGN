@@ -6,6 +6,16 @@ from sympy import symbols
 from djangoProject2.src.Point import Point
 
 
+
+def normalize(x, y, z):
+
+    points = cache.get('points')
+    max_x = max(node.x for node in points)
+    max_y = max(node.y for node in points)
+    max_z = max(node.z for node in points)
+    return x / max_x, y / max_y, z / max_z
+
+
 def format_f(x):
     return float("{0:.2f}".format(x))
 

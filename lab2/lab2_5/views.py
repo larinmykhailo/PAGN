@@ -30,13 +30,13 @@ def plot(request):
                 class_id = classify3d(i, j, k)
 
                 if class_id == 1:
-                    ax.scatter(i, j, k, color='red', label='I')
+                    ax.scatter(i, j, k, color='red', label='1')
                 elif class_id == 2:
-                    ax.scatter(i, j, k, color='blue', label='II')
+                    ax.scatter(i, j, k, color='blue', label='2')
                 elif class_id == 3:
-                    ax.scatter(i, j, k, color='green', label='III')
+                    ax.scatter(i, j, k, color='green', label='3')
                 elif class_id == 4:
-                    ax.scatter(i, j, k, color='yellow', label='IV')
+                    ax.scatter(i, j, k, color='yellow', label='4')
                 else:
                     ax.scatter(i, j, k, color='black', label='unknown')
 
