@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Form</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#add_form").on('submit', function (event) {
+                event.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: 'calculate',
+                    headers: {
+                        'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() // CSRF token
+                    },
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        x: $('#x').val(),
+                        y: $('#y').val(),
+                        z: $('#z').val(),
+                        option1: $('#option1').val(),
+                        option2: $('#option2').val()
+                    }),
+                    success: function (response) {
+                        const d = new Date();
+                        $('#coordinate_x').text(response.coordinate_x);
+                        $('#coordinate_y').text(response.coordinate_y);
+                        $('#coordinate_z').text(response.coordinate_z);
+                        $('#distance1').text(response.dist_class1);
+                        $('#distance2').text(response.dist_class2);
+                        $('#distance3').text(response.dist_class3);
+                        $('#distance4').text(response.dist_class4);
+                    },
+                    error: function () {
+                        alert('Помилка при отриманні даних.');
+                    }
+                });
+            });
+            $("#calc_form").on('submit', function (event) {
+                event.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: 'add_point1',
+                    headers: {
+                        'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() // CSRF token
+                    },
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        x: $('#x').val(),
+                        y: $('#y').val(),
+                        z: $('#z').val(),
+                        option1: $('#option1').val(),
+                        option2: $('#option2').val()
+                    }),
+                    success: function (response) {
+                        const d = new Date();
+                        $('#plot').attr('src', '{% url "plot1" %}' + '?t=' + d.getTime());
+                    },
+                    error: function () {
+                        alert('Помилка при отриманні даних.');
+                    }
+                });
+            });
+        })
+        ;
+    </script>
+</head>
+<body>
+<table>
+    <tr>
+        <td>
+            <h3>Додати:</h3>
+            <form id="add_form">
+                {% csrf_token %}
+                <label for="x">X:</label>
+                <input type="text" id="x" value="5" name="x"><br><br>
+                <label for="y">Y:</label>
+                <input type="text" id="y" value="5" name="y"><br><br>
+                <label for="z">Z:</label>
+                <input type="text" id="z" value="5" name="z"><br><br>
+
+                <label for="option1">Міра близкості:</label>
+                <select id="option1" name="option1">
+                    <option value="o1v1">Евклідова відстань</option>
+                    <option value="o1v2">Мінімум за модулів різниць значень кожної ознаки</option>
+                </select><br><br>
+
+                <label for="option2">Відстань між об’єктом та класом:</label>
+                <select id="option2" name="option2">
+                    <option value="o2v1">Відстань до центроїду класу</option>
+                    <option value="o2v2">Найбільше зі значень відстані до усіх еталонів класу</option>
+                </select><br><br>
+                <button type="submit" id="submitButton">Розрахувати</button>
+            </form>
+            <form id="calc_form">
+                <button type="submit" id="calcButton">Класифікувати</button>
+            </form>
+
+            <h3>Невідомий об'єкт до нормалізації:</h3>
+            <div>
+                <p>Координати:</p>
+                x: <span id="coordinate_x"></span>
+                y: <span id="coordinate_y"></span>
+                z: <span id="coordinate_z"></span>
+            </div>
+            <div>
+                <p>Відстань до класу 1: <span id="distance1"></span></p>
+                <p>Відстань до класу 2: <span id="distance2"></span></p>
+                <p>Відстань до класу 3: <span id="distance3"></span></p>
+                <p>Відстань до класу 4: <span id="distance4"></span></p>
+            </div>
+
+
+
+        </td>
+        <td>
+            <table>
+                <tr>
+                    <td>
+                        <div id="plots-div">
+                            <img id="plot" src="{% url 'plot1' %}"
+                                 alt="plot">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
