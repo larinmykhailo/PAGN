@@ -16,7 +16,6 @@ from djangoProject2.src.Util import normalize
 from lab3.src.Utils import ho_kashyap_algorithm
 
 new_points = []
-d_functions = {}
 
 
 def index(request):
@@ -183,6 +182,7 @@ def compare_results(request):
 
     # Генерація всіх комбінацій пар елементів
     # Виведення всіх пар
+    d_functions = {}
     i = 1
     for pair in itertools.combinations(classes, 2):
 
@@ -249,7 +249,6 @@ def compare_results(request):
         # Викликаємо функцію для встановлення кута огляду
         adjust_view(ax, np.array([a, b, c]))
 
-    cache.set('d_functions', d_functions, timeout=None)
 
     # Save the figure to a BytesIO object
     buf = BytesIO()
@@ -259,34 +258,62 @@ def compare_results(request):
     plt.close(fig)
 
     return HttpResponse(buf, content_type='image/png')
-#
-# def unclassigied_results(request):
-#
-#     fig = plt.figure(figsize=(10, 10))
-#     # некласифіковіні точки
-#     ax_uncl = fig.add_subplot(247, projection='3d')
-#     ax_uncl.set_title(f"Некласифікований простір")
-#
-#     for i in np.arange(0, 1, 0.1):
-#         for j in np.arange(0, 1, 0.1):
-#             for k in np.arange(0, 1, 0.1):
-#                 if check_class(i, j, k, d_functions) is None:
-#                     ax_uncl.scatter(i, j, k, color='black', marker='o')
-#     ax_uncl.scatter([], [], [], label='unclassified', color='black', marker='o')
-#     ax_uncl.legend()
-#
-#
-#
-#     # Save the figure to a BytesIO object
-#     buf = BytesIO()
-#     plt.tight_layout()
-#     plt.savefig(buf, format='png')
-#     buf.seek(0)
-#     plt.close(fig)
-#
-#     return HttpResponse(buf, content_type='image/png')
-#
-#
+
+def unclassified_results(request):
+
+    fig = plt.figure(figsize=(10, 10))
+    # некласифіковіні точки
+    ax_uncl = fig.add_subplot(111, projection='3d')
+    ax_uncl.set_title(f"Некласифікований простір")
+    d_functions = calculate_d_functions()
+    for i in np.arange(0, 1, 0.05):
+        for j in np.arange(0, 1, 0.05):
+            for k in np.arange(0, 1, 0.05):
+                if check_class(i, j, k, d_functions) is None:
+                    ax_uncl.scatter(i, j, k, color='black', marker='o')
+    ax_uncl.scatter([], [], [], label='unclassified', color='black', marker='o')
+    ax_uncl.legend()
+
+    # Save the figure to a BytesIO object
+    buf = BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    plt.close(fig)
+
+    return HttpResponse(buf, content_type='image/png')
+
+def all_results(request):
+
+    classes = cache.get('classes')
+    fig = plt.figure(figsize=(10, 10))
+    # некласифіковіні точки
+    ax = fig.add_subplot(111, projection='3d')
+    d_functions = calculate_d_functions()
+    for i in np.arange(0, 1, 0.05):
+        for j in np.arange(0, 1, 0.05):
+            for k in np.arange(0, 1, 0.05):
+               res = check_class(i, j, k, d_functions)
+               nearest_class = next((obj for obj in classes if obj.label == res), None)
+               if nearest_class is None:
+                ax.scatter(i, j, k, color='black', marker='o')
+               else:
+                ax.scatter(i, j, k, color=nearest_class.color, marker=nearest_class.marker)
+
+    for clazz in classes:
+        ax.scatter([], [], [], marker=clazz.marker, color=clazz.color, label=clazz.label)
+    ax.legend()
+
+    # Save the figure to a BytesIO object
+    buf = BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    plt.close(fig)
+
+    return HttpResponse(buf, content_type='image/png')
+
+
 #
 # Функція, яка перевіряє, чи точка задовольняє умови приналежності до кожного класу
 def check_class(x, y, z, d_functions):
